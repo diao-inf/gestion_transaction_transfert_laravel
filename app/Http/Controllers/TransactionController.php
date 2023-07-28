@@ -55,13 +55,22 @@ class TransactionController extends Controller
     {
         $compte_id = $request->input('compte_id');
         $montant = $request->input('montant');
+        $frais = 0;
 
         $compte = Compte::find($compte_id);
         if (!$compte) {
             return response()->json(['statut'=>Response::HTTP_NOT_FOUND,'message' => 'Compte introuvable'],404);
         }
 
-        $compte->solde += $montant;
+        if($compte->fournisseur == 'ORANGE MONEY' || $compte->fournisseur == 'WAVE'){
+            $frais = ($montant*1)%100;
+        }else if($compte->fournisseur == 'WARI'){
+            $frais = ($montant*2)%100;
+        }else{
+            $frais = ($montant*5)%100;
+        }
+
+        $compte->solde += ($montant-$frais);
         $compte->save();
 
         $transaction = new Transaction();
@@ -69,13 +78,7 @@ class TransactionController extends Controller
         $transaction->montant = $montant;
         $transaction->compte_source_id = $compte_id;
         $transaction->compte_destinataire_id = $compte_id;
-        if($compte->fournisseur == 'ORANGE MONEY' || $compte->fournisseur == 'WAVE'){
-            $transaction->frais = ($montant*1)%100;
-        }else if($compte->fournisseur == 'WARI'){
-            $transaction->frais = ($montant*2)%100;
-        }else{
-            $transaction->frais = ($montant*5)%100;
-        }
+        $transaction->frais = $frais;
         $transaction->save();
 
         return response()->json(['statut'=>Response::HTTP_OK,'message' => 'Dépôt effectué avec succès']);
@@ -85,6 +88,7 @@ class TransactionController extends Controller
     {
         $compte_id = $request->input('compte_id');
         $montant = $request->input('montant');
+        $frais = 0;
 
         $compte = Compte::find($compte_id);
         if (!$compte) {
@@ -94,8 +98,15 @@ class TransactionController extends Controller
         if ($compte->solde < $montant) {
             return response()->json(['statut'=>Response::HTTP_BAD_REQUEST,'message' => 'Solde insuffisant'], 400);
         }
+        if($compte->fournisseur == 'ORANGE MONEY' || $compte->fournisseur == 'WAVE'){
+            $frais = ($montant*1)%100;
+        }else if($compte->fournisseur == 'WARI'){
+            $frais = ($montant*2)%100;
+        }else{
+            $frais = ($montant*5)%100;
+        }
 
-        $compte->solde -= $montant;
+        $compte->solde -= ($montant+$frais);
         $compte->save();
 
         $transaction = new Transaction();
@@ -103,13 +114,7 @@ class TransactionController extends Controller
         $transaction->montant = $montant;
         $transaction->compte_source_id = $compte_id;
         $transaction->compte_destinataire_id = $compte_id;
-        if($compte->fournisseur == 'ORANGE MONEY' || $compte->fournisseur == 'WAVE'){
-            $transaction->frais = ($montant*1)%100;
-        }else if($compte->fournisseur == 'WARI'){
-            $transaction->frais = ($montant*2)%100;
-        }else{
-            $transaction->frais = ($montant*5)%100;
-        }
+        $transaction->frais = $frais;
         $transaction->save();
 
         return response()->json(['statut'=>Response::HTTP_OK,'message' => 'Retrait effectué avec succès']);
@@ -120,6 +125,7 @@ class TransactionController extends Controller
         $compte_source_id = $request->input('compte_source_id');
         $compte_destinataire_id = $request->input('compte_destinataire_id');
         $montant = $request->input('montant');
+        $frais = 0;
 
         $compte_source = Compte::find($compte_source_id);
         $compte_destinataire = Compte::find($compte_destinataire_id);
@@ -135,10 +141,18 @@ class TransactionController extends Controller
             return response()->json(['statut'=>Response::HTTP_BAD_REQUEST,'message' => 'Operateur different'], 400);
         }
 
-        $compte_source->solde -= $montant;
+        if($compte_source->fournisseur == 'ORANGE MONEY' || $compte_source->fournisseur == 'WAVE'){
+            $frais = ($montant*1)%100;
+        }else if($compte_source->fournisseur == 'WARI'){
+            $frais = ($montant*2)%100;
+        }else{
+            $frais = ($montant*5)%100;
+        }
+
+        $compte_source->solde -= ($montant+$frais);
         $compte_source->save();
 
-        $compte_destinataire->solde += $montant;
+        $compte_destinataire->solde += ($montant-$frais);
         $compte_destinataire->save();
 
         $transaction = new Transaction();
@@ -146,13 +160,7 @@ class TransactionController extends Controller
         $transaction->montant = $montant;
         $transaction->compte_source_id = $compte_source_id;
         $transaction->compte_destinataire_id = $compte_destinataire_id;
-        if($compte_source->fournisseur == 'ORANGE MONEY' || $compte_source->fournisseur == 'WAVE'){
-            $transaction->frais = ($montant*1)%100;
-        }else if($compte_source->fournisseur == 'WARI'){
-            $transaction->frais = ($montant*2)%100;
-        }else{
-            $transaction->frais = ($montant*5)%100;
-        }
+        $transaction->frais = $frais;
         $transaction->save();
 
         return response()->json(['statut'=>Response::HTTP_OK,'message' => 'Transfert effectué avec succès']);
