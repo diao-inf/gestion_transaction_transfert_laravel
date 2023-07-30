@@ -4,6 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\{
     TransactionController,
+    ClientController,
+    CompteController,
 };
 
 /*
@@ -26,3 +28,6 @@ Route::post('/depot', [TransactionController::class,'depot']);
 Route::post('/retrait', [TransactionController::class,'retrait']);
 Route::post('/transfert', [TransactionController::class,'transfert']);
 
+
+Route::apiResource('clients', ClientController::class)->only(['index', 'store']);
+Route::apiResource('comptes', CompteController::class)->only(['index', 'store']);
