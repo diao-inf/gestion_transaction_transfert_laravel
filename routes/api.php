@@ -27,7 +27,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::post('/depot', [TransactionController::class,'depot']);
 Route::post('/retrait', [TransactionController::class,'retrait']);
 Route::post('/transfert', [TransactionController::class,'transfert']);
+Route::post('/transfert-par-code', [TransactionController::class,'transfertParCode']);
 
 
+Route::get('clients/{id}/transactions', [ClientController::class, 'getTransactions']);
 Route::apiResource('clients', ClientController::class)->only(['index', 'store']);
 Route::apiResource('comptes', CompteController::class)->only(['index', 'store']);

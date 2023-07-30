@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -55,5 +56,16 @@ class ClientController extends Controller
     public function destroy(Client $client)
     {
         //
+    }
+
+    public function getTransactions($id)
+    {
+        try {
+            $client = Client::findOrFail($id);
+            $transactions = $client->comptes->flatMap->transactionsEnvois;
+            return response()->json(['statut'=>Response::HTTP_OK,'data' => $transactions], 200);
+        } catch (Exception $e) {
+            return response()->json(['statut'=>Response::HTTP_NOT_FOUND,'data' => null], 400);
+        }
     }
 }

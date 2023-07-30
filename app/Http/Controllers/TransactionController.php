@@ -8,6 +8,8 @@ use App\Models\{Transaction,
 };
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Str;
+
 
 class TransactionController extends Controller
 {
@@ -63,11 +65,11 @@ class TransactionController extends Controller
         }
 
         if($compte->fournisseur == 'ORANGE MONEY' || $compte->fournisseur == 'WAVE'){
-            $frais = ($montant*1)%100;
+            $frais = ($montant*1)/100;
         }else if($compte->fournisseur == 'WARI'){
-            $frais = ($montant*2)%100;
+            $frais = ($montant*2)/100;
         }else{
-            $frais = ($montant*5)%100;
+            $frais = ($montant*5)/100;
         }
 
         $compte->solde += ($montant-$frais);
@@ -99,11 +101,11 @@ class TransactionController extends Controller
             return response()->json(['statut'=>Response::HTTP_BAD_REQUEST,'message' => 'Solde insuffisant'], 400);
         }
         if($compte->fournisseur == 'ORANGE MONEY' || $compte->fournisseur == 'WAVE'){
-            $frais = ($montant*1)%100;
+            $frais = ($montant*1)/100;
         }else if($compte->fournisseur == 'WARI'){
-            $frais = ($montant*2)%100;
+            $frais = ($montant*2)/100;
         }else{
-            $frais = ($montant*5)%100;
+            $frais = ($montant*5)/100;
         }
 
         $compte->solde -= ($montant+$frais);
@@ -142,11 +144,11 @@ class TransactionController extends Controller
         }
 
         if($compte_source->fournisseur == 'ORANGE MONEY' || $compte_source->fournisseur == 'WAVE'){
-            $frais = ($montant*1)%100;
+            $frais = ($montant*1)/100;
         }else if($compte_source->fournisseur == 'WARI'){
-            $frais = ($montant*2)%100;
+            $frais = ($montant*2)/100;
         }else{
-            $frais = ($montant*5)%100;
+            $frais = ($montant*5)/100;
         }
 
         $compte_source->solde -= ($montant+$frais);
@@ -160,6 +162,44 @@ class TransactionController extends Controller
         $transaction->montant = $montant;
         $transaction->compte_source_id = $compte_source_id;
         $transaction->compte_destinataire_id = $compte_destinataire_id;
+        $transaction->frais = $frais;
+        $transaction->save();
+
+        return response()->json(['statut'=>Response::HTTP_OK,'message' => 'Transfert effectué avec succès']);
+    }
+
+    public function transfertParCode(Request $request)
+    {
+        $compte_source_id = $request->input('compte_source_id');
+        $destinataire_id = $request->input('destinataire_id');
+        $montant = $request->input('montant');
+        $frais = 0;
+
+        $compte_source = Compte::find($compte_source_id);
+        $destinataire = Client::find($destinataire_id);
+        if (!$compte_source || !$destinataire) {
+            return response()->json(['statut'=>Response::HTTP_NOT_FOUND, 'message' => 'Compte source ou client destinataire introuvable'], 404);
+        }
+
+        if ($compte_source->solde < $montant) {
+            return response()->json(['statut'=>Response::HTTP_BAD_REQUEST,'message' => 'Solde insuffisant'], 400);
+        }
+
+        $frais = ($montant*1)/100;
+
+        $compte_source->solde -= ($montant+$frais);
+        $compte_source->save();
+
+        // $destinataire->solde += ($montant-$frais);
+        // $destinataire->save();
+
+        $transaction = new Transaction();
+        $transaction->type = 'TRANSFERT';
+        $transaction->montant = $montant;
+        $transaction->compte_source_id = $compte_source_id;
+        $transaction->destinataire_id = $compte_source_id;
+        $transaction->is_immediate = true;
+        $transaction-> code =  Str::random(25);
         $transaction->frais = $frais;
         $transaction->save();
 
